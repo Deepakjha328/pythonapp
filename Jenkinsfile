@@ -1,55 +1,75 @@
-def img
 pipeline {
+    
     environment {
-        registry = "ashishmj/python-jenkins" //To push an image to Docker Hub, you must first name your local image using your Docker Hub username and the repository name that you created through Docker Hub on the web.
-        registryCredential = 'jenkin21'
-        githubCredential = 'Deepakjha328'
-        dockerImage = ''
+        
+        buildNUMBER = currentBuild.getNumber()
     }
+    
     agent any
+    
     stages {
         
-        stage('checkout') {
-                steps {
-                git branch: 'main',
-                credentialsId: githubCredential,
-                url: ' https://github.com/Deepakjha328/pythonapp.git'
+        stage ('clone from git-hub') {
+            
+            steps {
+                
+                script {
+                    
+                    checkout scmGit(branches: [[name: '*/main']], 
+                    extensions: [], 
+                    userRemoteConfigs: [[credentialsId: 'jenkins', 
+                    url: 'https://github.com/Deepakjha328/pythonapp.git']])
                 }
+            }
         }
         
-        stage ('Clean Up'){
-            steps{
-                sh returnStatus: true, script: 'docker stop $(docker ps -a | grep ${JOB_NAME} | awk \'{print $1}\')'
-                sh returnStatus: true, script: 'docker rmi $(docker images | grep ${registry} | awk \'{print $3}\') --force' //this will delete all images
-                sh returnStatus: true, script: 'docker rm ${JOB_NAME}'
-            }
-        }
-
-        stage('Build Image') {
+        stage ('Build docker image') {
+            
             steps {
+                
                 script {
-                    img = registry + ":${env.BUILD_ID}"
-                    println ("${img}")
-                    dockerImage = docker.build("${img}")
+                    
+                    sh 'docker build -t docker-jenkins-python:${buildNUMBER} .'
+                    sh 'docker tag docker-jenkins-python:${buildNUMBER} samba642/docker-jenkins-python:${buildNUMBER}'
                 }
             }
         }
-
-        stage('Push To DockerHub') {
+        
+        stage ('Docker hub login') {
+            
             steps {
+                
                 script {
-                    docker.withRegistry( 'https://registry.hub.docker.com ', registryCredential ) {
-                        dockerImage.push()
+                    
+                    withCredentials([string(credentialsId: 'Docker_Creditial', variable: 'Docker_PWD')]) {
+                        
+                        sh 'docker login -u samba642 -p ${Docker_PWD}'
                     }
                 }
             }
         }
+        
+        stage ('Push image Docker-Hub') {
+            
+            steps {
+                
+                script {
                     
-        stage('Deploy') {
-           steps {
-                sh label: '', script: "docker run -d --name ${JOB_NAME} -p 5000:5000 ${img}"
-          }
+                    sh 'docker push samba642/docker-jenkins-python:${buildNUMBER}'
+                }
+            }
         }
-
-      }
+        
+        stage ('Deploy') {
+            
+            steps {
+                
+                script {
+                    
+                    sh 'docker rm -f docker-jenkins-python || true'
+                    sh 'docker run -d -it --name docker-jenkins-python -p 3333:3333 samba642/docker-jenkins-python:${buildNUMBER}'
+                }
+            }
+        }
     }
+}
