@@ -1,4 +1,3 @@
-# import flast module
 from flask import Flask
  
 # instance of flask application

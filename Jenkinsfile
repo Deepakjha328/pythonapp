@@ -30,7 +30,7 @@ pipeline {
                 script {
                     
                     sh 'docker build -t docker-jenkins-python:${buildNUMBER} .'
-                    sh 'docker tag docker-jenkins-python:${buildNUMBER} samba642/docker-jenkins-python:${buildNUMBER}'
+                    sh 'docker tag docker-jenkins-python:${buildNUMBER} jenkin21/pythonapp:${buildNUMBER}'
                 }
             }
         }
@@ -43,7 +43,7 @@ pipeline {
                     
                     withCredentials([string(credentialsId: 'Docker_Creditial', variable: 'Docker_PWD')]) {
                         
-                        sh 'docker login -u samba642 -p ${Docker_PWD}'
+                        sh 'docker login -u jenkin21 -p ${Docker_PWD}'
                     }
                 }
             }
@@ -55,7 +55,7 @@ pipeline {
                 
                 script {
                     
-                    sh 'docker push samba642/docker-jenkins-python:${buildNUMBER}'
+                    sh 'docker push jenkin21/pythonapp:${buildNUMBER}'
                 }
             }
         }
@@ -67,7 +67,7 @@ pipeline {
                 script {
                     
                     sh 'docker rm -f docker-jenkins-python || true'
-                    sh 'docker run -d -it --name docker-jenkins-python -p 3333:3333 samba642/docker-jenkins-python:${buildNUMBER}'
+                    sh 'docker run -d -it --name docker-jenkins-python -p 5000:5000 jenkin21/pythonapp:${buildNUMBER}'
                 }
             }
         }
